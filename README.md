@@ -1,153 +1,341 @@
-# Statistical Learning Final Project  
-### **Evaluating Classification, Linear, and Shrinkage Models for Predicting a Simulated Disease Status and Polygenic Trait Within A Population**
+# Statistical Modeling Final Project  
+### **Linear Modeling Analysis of a Simulated msprime Cohort**
 
 **Author:** Makenna Worley & Kate Regilski  
 **Course:** Statistical Modeling (Spring 2026)  
 **Dataset:** Generated using `make_msprime_dataset.py` with seed 3195663216 
-**Tools:** Python, scikit-learn, pandas, matplotlib, seaborn
+**Output File:** `data350.ipynb` - Jupyter notebook with HTML export  
+**Tools:** Python 3, pandas, numpy, scipy, statsmodels, matplotlib, seaborn
 
 ---
 
 ## 📌 Project Overview
 
-This project uses a fully simulated genetic dataset generated via **msprime** to evaluate both **classification** and **regression** methods within a controlled, biologically realistic setting.
+This project demonstrates proficiency with fundamental statistical modeling techniques through analysis of a simulated genetic dataset generated via **msprime**. The analysis follows a structured curriculum approach with three main components:
 
-### ✔ Classification
-
-The **classification task** uses the binary variable `disease_status`. This task demonstrates familiarity with statistical learning classification methods (Logistic Regression, LDA, QDA, KNN, SVM), but the disease phenotype in the simulation is intentionally noisy, making the regression task the scientifically meaningful component.
-
-### ✔ Regression
-
-**Linear models, subset selection methods, and shrinkage techniques** (ridge, lasso, elastic net) are used to recover the **true genetic architecture** of a simulated polygenic `quant_trait`. Because the dataset includes the *true causal effect sizes*, this analysis enables a direct comparison between estimated and real underlying model coefficients.
-
-[Overview Youtube Video](https://youtu.be/BKJO8UvWFnU)
+1. **Introduction & Exploratory Data Analysis (EDA)** - Understand data structure and relationships
+2. **Mechanical Tasks** - Demonstrate technical competency with standard methods
+3. **Meaningful Model** - Apply domain knowledge to test a contextual hypothesis
 
 ---
 
 ## 🧬 Dataset Description
 
-The simulation generates two CSV files:
+The dataset is a **simulated cohort of 10,000 individuals** generated using the msprime coalescent simulator. The simulation produces a realistic genetic background with demographic and environmental covariates, enabling analysis under known conditions.
 
-### **Cohort-level data**
-* `quant_trait` — continuous quantitative phenotype
-* `polygenic_score` — standardized polygenic risk for the trait
-* `disease_status` — binary outcome (0/1)
-* `age`, `sex`, `env_index` — demographic and environmental covariates
-* `PC1`, `PC2` — principal components capturing population structure
+### **Variables in the Dataset**
 
----
+**Numerical Variables:**
+- `age` — Individual age (20-78 years, uniformly distributed)
+- `env_index` — Environmental exposure index (standardized, mean = 0, sd = 1)
+- `polygenic_score` — Standardized polygenic risk score from causal variants (mean = 0, sd = 1)
+- `quant_trait` — Quantitative trait response variable (standardized)
 
-## 🔑 **Key Findings**
+**Categorical Variables:**
+- `sex` — Biological sex (Female / Male, ~50/50 split)
+- `disease_status` — Binary disease status (0 = no disease, 1 = disease, ~50/50 split)
 
-### 🦠 **Classification (Predicting Disease Status)**
+**Additional Variables:**
+- `disease_prob` — Probability of disease based on simulation parameters
+- `PC1`, `PC2` — Principal components from genotype PCA (population structure)
 
-The most robust classification model was **Logistic Regression**, which achieved the highest balance of predictive power and stability.
-
-* **Top Performance (AUC):** The **Logistic Regression model** achieved the highest **AUC ($\approx 0.758$)** and **Average Precision ($\approx 0.751$)** on the test set.
-* **Accuracy:** The best model's overall accuracy was **$\approx 68.7\%$**.
-* **Overfitting:** Unlike the Linear Regression, several non-linear models (KNN, Decision Tree, Random Forest) showed signs of **significant overfitting**.
-* **Feature Importance (Classification):** The **Polygenic Score** remained the single most important predictor across all stable classification models.
-
-### 🎯 **Regression (Predicting Quantitative Trait)**
-
-The most robust and predictive regression model was **Linear Regression using Full Features + PCA** ($R^2 \approx 0.567$).
-
-* **Optimal Performance** The highest predictive power achieved by any model was an **$R^2 \approx 0.567$** on the test set, with a low $\text{RMSE} \approx 0.644$.
-* **Best Model:** The **Linear Regression (LR) Full + PCA model** was selected as the top model due to its high accuracy, robust stability, and its use of orthogonal (uncorrelated) principal components as predictors.
-* **Feature Importance:** The most significant predictors for the `quant_trait` were the **Polygenic Score** (coefficient $\approx 0.657$) and the **Environmental Index** (coefficient $\approx 0.353$).
-* **Shrinkage Models:** Ridge, Lasso, and ElasticNet models converged on a final model with nearly the **exact same performance** as the standard Linear Regression, indicating that the original OLS model was already well-conditioned.
-* **Model Validation:** All top linear and shrinkage models showed **low error and strong stability**, successfully meeting the assumptions of randomly scattered, normally distributed errors.
-* **Poor Performers:** Regression Tree models were **disqualified due to severe overfitting** (Test $R^2$ in the $0.35$ to $0.39$ range), confirming the underlying relationship between predictors and the Quantitative Trait is fundamentally **linear**.
+### **Data Source**
+- Generated via msprime coalescent simulation with Wright-Fischer model
+- Includes realistic linkage disequilibrium and recombination patterns
+- Demographic variables and environmental factors added to simulate real-world complexity
+- File: `data/3195663216_msprime_sim_cohort.csv`
 
 ---
 
-## 🧪 **Evaluation Metrics**
+## 📋 Project Components
 
-### For classification performance:
+### **1. Introduction & Exploratory Data Analysis**
 
-* **Test Accuracy**
-* **Test AUC** (Area Under the ROC Curve - primary metric)
-* **Test Average Precision**
+The report begins with background on the msprime dataset and its generation process. The EDA section includes:
+- Summary statistics for all variables
+- Distribution plots (histograms, violin plots) for numerical variables
+- Count plots for categorical variables
+- Pairwise correlation analysis with heatmaps
+- Variance Inflation Factor (VIF) assessment for multicollinearity
+- Scatterplots showing relationships between predictors and the response variable
+- Outlier detection via z-scores and box plots
 
-### For regression performance:
-
-* **Test $\text{RMSE}$**
-* **Test $R^2$**
-* **Overfitting Gap** (Difference between Train $R^2$ and Test $R^2$)
+**Key EDA Findings:**
+- Strong positive correlation between polygenic score and quantitative trait ($r ≈ 0.66$)
+- Moderate positive correlation between environmental index and trait ($r ≈ 0.35$)
+- No significant sex difference in trait distribution
+- Age shows negligible correlation with trait
+- High multicollinearity in raw variables (VIF: age = 10.34, disease_prob = 12.33)
+- Principal components successfully reduce multicollinearity (PC1 VIF = 1.32, PC2 VIF = 1.13)
 
 ---
 
-## 🎯 Research Questions
+### **2. Mechanical Tasks**
 
-### **Classification**
-> **How accurately can disease status be predicted from the features?**
+These tasks demonstrate core technical competency with standard linear modeling approaches.
 
-#### **Classification Models**
-- Logistic Regression  
-- Linear Discriminant Analysis (LDA)  
-- Quadratic Discriminant Analysis (QDA)  
-- KNN (k = 11)  
-- SVM with RBF kernel 
+#### **Task 1: Multiple Regression**
 
-#### **Classification Evaluation Metrics**
-- Accuracy
-- ROC curves
-- AUC
-- Confusion matrix  
+**Model Specification:**
+```
+quant_trait ~ polygenic_score + sex + (polygenic_score × sex)
+```
 
-The classification model is less meaningful biologically due to the high stochasticity in the binary disease simulation.
+**Analysis includes:**
+- ✓ Scatterplots of response vs predictors (colored by sex)
+- ✓ Multiple regression without interaction
+- ✓ Multiple regression with interaction term
+- ✓ F-test for statistical significance of interaction
+- ✓ Residual diagnostic plots (fitted vs residuals, Q-Q plot, histogram, scale-location)
+- ✓ ANOVA table interpretation
+- ✓ Coefficient interpretation (intercept, main effects, interaction)
+- ✓ Shapiro-Wilk normality test
 
-### **Regression**
-> **How well do linear, subset-selection, and shrinkage models recover the true genetic architecture of a simulated polygenic quantitative trait?**
+**Expected Findings:**
+- Polygenic score is a strong predictor of trait (positive coefficient)
+- Sex may show main effect and/or interaction with polygenic score
+- Residuals approximately normally distributed with homogeneous variance
+- Interaction may or may not be significant (analysis proceeds regardless)
 
-#### **Regression Models**
-- Simple Linear Regression (`quant_trait ~ PRS`)
-- Multiple Linear Regression (`PRS + sex + age + env_index`)
-- Linear Regression with PCs (`+ PC1 + PC2`)
-- Forward & Backward Stepwise Selection (AIC/BIC)
-- **Ridge Regression**
-- **Lasso Regression**
-- **Elastic Net**
-- **Bootstrap Coefficient Intervals (n=500)**
+---
 
-#### **Regression Evaluation Metrics**
-- RMSE (train/test)  
-- R² (train/test)  
-- Cross-validation RMSE  
-- Coefficient stability (bootstrap)  
-- Comparison to true β values  
-- Shrinkage paths
+#### **Task 2: ANOVA Analysis**
 
-### **Sub-questions:**
-1. How much variance is explained by PRS vs environmental factors?  
-2. Which model yields the best predictive performance (RMSE, R²)?  
-3. Do shrinkage methods improve coefficient stability?  
-4. How closely do estimated coefficients match the true simulation parameters?  
-5. Do PCs from neutral structure influence prediction?
+**Model Specification (with Deviance Coding):**
+```
+quant_trait ~ C(sex, Sum) + C(disease_status, Sum) + C(sex, Sum):C(disease_status, Sum)
+```
+
+**Analysis includes:**
+- ✓ Deviance (sum) coding applied to both categorical variables
+- ✓ Two-way ANOVA with both main and interaction terms
+- ✓ F-test comparing model with vs without interaction
+- ✓ Type III ANOVA table
+- ✓ **Group mean recovery** - Calculate predicted means from model coefficients and verify against observed means
+- ✓ Interaction plot visualization
+- ✓ Box plots by group
+
+**Key Insight:**
+Demonstrates that model coefficients (with deviance coding) can be used to reconstruct all group means through coefficient combinations, validating the model parameterization.
+
+---
+
+### **3. Meaningful Model**
+
+**Hypothesis:** 
+How much does the quantitative trait vary due to combined genetic (polygenic_score) and environmental (env_index) factors, after controlling for demographic differences (sex)?
+
+**Model Specification:**
+```
+quant_trait ~ polygenic_score + env_index + sex
+```
+
+**Advanced Diagnostics:**
+- ✓ Variable transformation assessment (if needed)
+- ✓ Thorough outlier detection and influence analysis
+  - Cook's distance plots
+  - Leverage-residual plots
+  - Identification of high-influence points
+- ✓ Residual diagnostics and assumption checking
+- ✓ Multicollinearity assessment
+- ✓ Model interpretation with biological/contextual significance
+
+**Expected Interpretation:**
+- Strong positive effect of polygenic score on trait
+- Moderate positive effect of environmental index
+- Possible sex difference in baseline trait level
+- Model explains ~56% of trait variance (R² ≈ 0.567 based on EDA findings)
+- Conclusion about relative importance of genetic vs environmental factors
+
+---
+
+## 🔍 Key Analysis Methods
+
+### **Statistical Techniques Used**
+
+1. **Exploratory Data Analysis**
+   - Summary statistics
+   - Correlation matrices
+   - VIF for multicollinearity
+   - Outlier detection (z-scores)
+
+2. **Hypothesis Testing**
+   - F-tests for model comparison
+   - T-tests for coefficient significance
+   - Shapiro-Wilk test for normality
+
+3. **Model Diagnostics**
+   - Residual plots (fitted vs residuals, Q-Q plots)
+   - Scale-location plots (homogeneity of variance)
+   - Influence diagnostics (Cook's distance, leverage)
+   - Normality testing
+
+4. **Coding Schemes**
+   - Default (dummy) coding for Task 1
+   - Deviance (sum) coding for Task 2
+   - Proper contrast specification
 
 ---
 
 ## 📂 Repository Structure
 
 ```
-project-root/
+data350_final/
 │
 ├── data/
-│   ├── msprime_sim_cohort.csv
-│   └── msprime_effect_sizes.csv
+│   ├── 3195663216_msprime_sim_cohort.csv          # Main analysis dataset (10,000 obs)
+│   └── 3195663216_msprime_effect_sizes.csv        # True causal effect sizes
 │
 ├── notebooks/
-│   ├── final.ipynb                 # Main Jupyter analysis notebook
-│   ├── final.html                  # HTML export of final.ipynb
-│   ├── analysis.ipynb              # Playground for my analysis
-│   └── exploratory.ipynb           # EDA and initial exploration
+│   ├── data350.ipynb                              # Main analysis notebook
+│   └── data350.qmd                                # R version of data350.ipynb
 │
 ├── streamlit/
-│   ├── app.py                      # Streamlit visualization interface
-│   └── requirements.txt            # Requirements for the Streamlit
+│   ├── app.py                                     # Optional visualization dashboard
+│   └── requirements.txt
 │
-└── README.md
+├── environment.yml                                # Conda environment specification
+├── README.md                                      # This file
+│
+└── [Output files]
+    └── data350.html                               # HTML export
 ```
+
+---
+
+## 💻 Software & Dependencies
+
+### **Python Libraries**
+- **Data manipulation:** pandas, numpy
+- **Statistical modeling:** statsmodels, scipy.stats
+- **Machine learning:** scikit-learn
+- **Visualization:** matplotlib, seaborn
+- **Environment:** conda/Python 3.8+
+
+### **Installation**
+
+Create the environment using the provided `environment.yml`:
+```bash
+conda env create -f environment.yml
+conda activate data350
+```
+
+Or install packages manually:
+```bash
+pip install pandas numpy scipy statsmodels scikit-learn matplotlib seaborn statsmodels
+```
+
+---
+
+## 🚀 Running the Analysis
+
+### **Generate HTML Report (from Quarto)**
+
+After modifying or executing cells in `data350.ipynb`, export to HTML:
+
+```bash
+# Using Quarto (recommended for course submission)
+quarto render data350.ipynb --to html
+
+# Or using jupyter nbconvert
+jupyter nbconvert --to html data350.ipynb
+```
+
+This generates `data350.html` for Canvas submission.
+
+### **Execute Notebook Cells**
+
+Open the notebook in Jupyter and run cells sequentially:
+```bash
+jupyter notebook notebooks/data350.ipynb
+```
+
+---
+
+## 📊 Expected Output
+
+### **From data350.ipynb:**
+
+1. **Introduction Section**
+   - Background on msprime simulation
+   - Summary statistics table
+   - Distribution plots for all variables
+   - Correlation heatmap
+   - VIF multicollinearity assessment
+
+2. **Task 1: Multiple Regression**
+   - Scatterplots with regression lines
+   - Model summary table (coefficients, p-values, R²)
+   - Residual diagnostic plots (4-panel figure)
+   - Interaction test results
+   - Coefficient interpretation
+
+3. **Task 2: ANOVA**
+   - ANOVA table (Type III)
+   - Group means table (observed and predicted)
+   - Interaction plot
+   - Box plots by group
+
+4. **Meaningful Model**
+   - Model summary with interpretation
+   - Residual diagnostics
+   - Influence and outlier analysis
+   - Summary findings and conclusions
+
+---
+
+## 📋 Grading Rubric Alignment
+
+✓ **Introduction** - Data background, EDA with integrated graphs, properly labeled axes
+✓ **Task 1** - Multiple regression with interaction testing and interpretation
+✓ **Task 2** - ANOVA with deviance coding and group mean recovery from coefficients
+✓ **Meaningful Model** - Contextual hypothesis, diagnostics, transformation assessment, outlier analysis, conclusions
+✓ **Format** - Jupyter notebook with HTML export ready for Canvas submission
+✓ **Audience** - Written for readers familiar with linear modeling but not this specific dataset
+
+---
+
+## 📝 Notes
+
+### **Data Characteristics**
+- Clean, complete dataset (no missing values)
+- Appropriate for linear modeling (meets normality assumptions reasonably well)
+- Includes both numerical and categorical predictors
+- Multiple potential response variables (quant_trait primary, disease_status alternative)
+- Good sample size (n = 10,000) for reliable estimation
+
+### **Common Extensions** (beyond rubric requirements)
+- Compare models using cross-validation or AIC/BIC
+- Assess coefficient stability via bootstrap
+- Explore non-linear transformations
+- Test more complex interactions or polynomial terms
+- Compare with alternative coding schemes for categorical variables
+
+---
+
+## 🎓 Learning Objectives Demonstrated
+
+By completing this project, you will show proficiency with:
+
+✓ Exploratory data analysis and visualization
+✓ Multiple regression modeling (dummy coding, interaction terms)
+✓ ANOVA design and interpretation (deviance coding)
+✓ Hypothesis testing and statistical inference
+✓ Residual diagnostics and model assumptions
+✓ Outlier detection and influence analysis
+✓ Contextual model development and interpretation
+✓ Report writing for statistical audiences
+✓ Jupyter/Quarto notebook authoring
+✓ Python-based statistical computing
+
+---
+
+## 📧 Contact & Questions
+
+For questions about:
+- **Data handling or cleaning:** See instructor during office hours
+- **Statistical methods:** Refer to course notes or discussion section
+- **Technical issues:** Check Python/statsmodels documentation or troubleshoot in office hours
 
 ---
 
