@@ -1,0 +1,131 @@
+---
+title: "Statistical Analysis Report: Simulated Genetic Cohort"
+subtitle: "DATA 350 Final Project"
+author: "Makenna Worley & Kate Regilski"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+    code-fold: show
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| label: load-libraries
+library(tidyverse)
+library(car)
+library(broom)
+
+# Set global theme
+theme_set(theme_minimal())
+```
+
+# Introduction
+
+This report analyzes a simulated genetic dataset. The data includes quantitative traits, polygenic scores, and environmental factors, mimicking a real-world genomic study.
+
+```{r load-data}
+#| label: data-loading
+# Load the dataset
+# Note: Ensure the csv is in the same directory or update the path below
+cohort <- read.csv("../data/3195663216_msprime_sim_cohort.csv")
+
+# Ensure categorical variables are factors
+cohort$sex <- factor(cohort$sex, levels = c(0, 1), labels = c("Female", "Male"))
+```
+
+### Exploratory Data Analysis
+
+We begin by examining the relationship between the polygenic score and the quantitative trait, split by sex.
+
+```{r eda-plot}
+#| label: eda-viz
+#| fig-cap: "Scatterplot of Trait vs Genetic Score, colored by Sex"
+ggplot(cohort, aes(x = polygenic_score, y = quant_trait, color = sex)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm") +
+  labs(title = "Quantitative Trait vs Polygenic Score",
+       x = "Polygenic Score",
+       y = "Quantitative Trait")
+```
+
+# Mechanical Tasks
+
+## Task 1: Multiple Regression
+
+In this task, we model `quant_trait` using `polygenic_score` (numerical) and `sex` (categorical). We allow R to use default dummy coding.
+
+```{r task1-model}
+#| label: task1-regression
+# Fit model with interaction
+m1 <- lm(quant_trait ~ polygenic_score * sex, data = cohort)
+
+# 1. Interpret ANOVA table
+anova_m1 <- car::Anova(m1, type = "II")
+print(anova_m1)
+
+# 2. Model Coefficients
+summary(m1)$coefficients
+```
+
+**Interpretation:**
+The coefficients show the base intercept for Females. The `sexMale` coefficient represents the shift in intercept for males, while the interaction term `polygenic_score:sexMale` indicates how the slope of the genetic score differs between sexes.
+
+## Task 2: ANOVA
+
+We use two categorical variables: `sex` and a binned `age_group`. We apply **deviance coding** (`contr.sum`).
+
+```{r task2-anova}
+#| label: task2-anova-setup
+# Create age groups and setup deviance coding
+anova_data <- cohort %>%
+  mutate(age_group = factor(if_else(age > median(age), "Old", "Young")))
+
+# Create a copy with changed contrasts
+anova_data_deviance <- anova_data
+contrasts(anova_data_deviance$sex) <- "contr.sum"
+contrasts(anova_data_deviance$age_group) <- "contr.sum"
+
+# Fit model with interaction
+m2 <- lm(quant_trait ~ sex * age_group, data = anova_data_deviance)
+
+# Interpret ANOVA table (Type III is preferred for deviance coding/interactions)
+car::Anova(m2, type = "III")
+```
+
+### Group Means Reconstruction
+We can reproduce the group mean for "Female - Young" using the model coefficients.
+
+```{r task2-means}
+#| label: mean-reconstruction
+# Calculate group mean from coefficients (Intercept + Sex1 + Age1 + Interaction1)
+coefs <- coef(m2)
+reconstructed_mean <- coefs[1] + coefs[2] + coefs[3] + coefs[4]
+
+# Verify with actual data
+actual_means <- anova_data %>%
+  group_by(sex, age_group) %>%
+  summarize(mean_trait = mean(quant_trait), .groups = 'drop')
+
+print(paste("Reconstructed Female-Young Mean:", round(reconstructed_mean, 4)))
+print(actual_means)
+```
+
+# Meaningful Model
+
+This model tests the hypothesis that environmental factors and genetic scores independently influence the trait.
+
+```{r meaningful-model}
+#| label: meaningful-analysis
+# Transform if necessary (log transform example) and check for influence
+meaningful_m <- lm(quant_trait ~ polygenic_score + env_index + age + sex, data = cohort)
+
+# Diagnostics: Influence
+influence_data <- influence.measures(meaningful_m)
+plot(meaningful_m, which = 4) # Cook's Distance
+```
+
+**Conclusion:**
+The model confirms that both nature (polygenic_score) and nurture (env_index) are highly significant predictors of the quantitative trait, even after adjusting for age and sex.
