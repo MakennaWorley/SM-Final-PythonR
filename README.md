@@ -188,7 +188,7 @@ data350_final/
 │
 ├── notebooks/
 │   ├── data350.ipynb                              # Main analysis notebook
-│   └── data350.qmd                                # R version of data350.ipynb
+│   └── presentation_report.qmd                    # R version of data350.ipynb
 │
 ├── streamlit/
 │   ├── app.py                                     # Optional visualization dashboard
@@ -198,6 +198,7 @@ data350_final/
 ├── README.md                                      # This file
 │
 └── [Output files]
+│   ├── presentation_report.py                     # HTML export
     └── data350.html                               # HTML export
 ```
 
